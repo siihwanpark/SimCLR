@@ -6,6 +6,19 @@ from gaussian_blur import GaussianBlur
 from torchvision import datasets
 
 
+# A function for color distortion
+# Referenced from the paper
+def get_color_distortion(s=1.0):
+    # s is the strength of color distortion.
+    color_jitter = transforms.ColorJitter(0.8*s, 0.8*s, 0.8*s, 0.2*s)
+    rnd_color_jitter = transforms.RandomApply([color_jitter], p=0.8)
+    rnd_gray = transforms.RandomGrayscale(p=0.2)
+    color_distort = transforms.Compose([
+        rnd_color_jitter,
+        rnd_gray])
+    
+    return color_distort
+
 class DataSetWrapper(object):
     def __init__(self, batch_size, num_workers, valid_size, input_shape):
         self.batch_size = batch_size
@@ -27,11 +40,18 @@ class DataSetWrapper(object):
         ### TODO: Complete SimCLR transforms ###
         # I strongly recommand you to use torchvision.transforms to implement data augmentation
         # You can use provided gaussian_blur if you want
-
-        data_transforms: transforms.Compose
+        
+        color_distort = get_color_distortion()
 
         gaussian_blur = GaussianBlur(
             kernel_size=int(0.1 * self.input_shape[0]))
+
+        data_transforms = transforms.Compose([
+            transforms.RandomResizedCrop(96),
+            color_distort,
+            gaussian_blur,
+            transforms.ToTensor()
+        ])
 
         return data_transforms
 
