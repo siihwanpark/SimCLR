@@ -46,8 +46,8 @@ def main(args):
     for epoch in range(epochs):
         #TODO: Tranining
         t = time.time()
-        for i, ((x_odd, x_even), _) in enumerate(train_loader):
-            loss = SimCLR(x_odd, x_even, f, g, criterion, device)
+        for i, ((xi, xj), _) in enumerate(train_loader):
+            loss = SimCLR(xi, xj, f, g, criterion, device)
 
             optimizer.zero_grad()
             loss.backward()
@@ -73,7 +73,7 @@ def main(args):
 
                 val_losses.append(loss.item())
             
-            val_loss /= len(val_loss)
+            val_loss /= len(valid_loader)
 
             print("[%d/%d] validation loss : %.4f | time : %.2fs"
                   % (epoch + 1, epochs, loss.item(), time.time() - t))
@@ -94,59 +94,108 @@ def main(args):
     # Loss Curve Plotting ###################################
     fig, ax = plt.subplots()
     ax.plot(train_losses, label='train loss')
+    ax.set_xlabel('Iterations')
+    ax.set_ylabel('Loss')
+    ax.legend()
+
+    ax.set(title="Train Loss Curve")
+    ax.grid()
+
+    fig.savefig("train_loss_curve.png")
+    plt.close()
+
+    fig, ax = plt.subplots()
     ax.plot(val_losses, label='validation loss')
     ax.set_xlabel('Iterations')
     ax.set_ylabel('Loss')
     ax.legend()
 
-    ax.set(title="Loss Curve")
+    ax.set(title="Validation Loss Curve")
     ax.grid()
 
-    fig.savefig("loss_curve.png")
+    fig.savefig("val_loss_curve.png")
     plt.close()
     #########################################################
 
-def SimCLR(x_odd, x_even, f, g, criterion, device):
-    N = x_odd.size(0)  # batch size
+def SimCLR(xT_odd, xT_even, f, g, criterion, device):
+    N = xT_odd.size(0)  # batch size
 
-    # x_odd = [x1, x3, ..., x2N-1] and x_even = [x2, x4, ..., x2N] where N is the batch size
-    x_odd, x_even = x_odd.to(device), x_even.to(device)
+    '''
+    ########################## Linear Algebraic View ###################################
+    x_T mean x.transpose()
 
-    # z_odd = [z_1^T, z_3^T, ..., z_2N-1^T], z_even = [z_2^T, z_4^T, ..., z_2N^T] ; of size [N, 512], [N,512]
-    z_odd, z_even = g(f(x_odd)), g(f(x_even))
-
-    # [z_1^T, z_3^T, ..., z_2N-1^T, z_2^T, z_4^T, ..., z_2N^T] ; of size [2N, 512]
-    z = torch.cat([z_odd, z_even], dim=0)
-
-    perm = make_permutation(N)  # [0, N, 1, N+1, ..., N-1, 2N-1]
-    z = z[perm, :]  # [z_1^T, z_2^T, ..., z_2N-1^T, z_2N^T]
+    xT_odd = [x1_T,             xT_even = [x2_T,
+              x3_T,                        x4_T,
+               ...                          ...
+              x2N-1_T]                     x2N_T]
     
-    # [||z_1||, ||z_2||, ..., ||z_2N||] ; of size [2N, 1]
-    z_norm = torch.norm(z, dim=-1).unsqueeze(-1)
+    zT_odd = [z1_T,             zT_even = [z2_T,
+              z3_T,                        z4_T,
+               ...                          ...
+              z2N-1_T]                     z2N_T]
 
-    zT = z.transpose(0, 1)  # [z_1, z_2, ..., z_2N] ; of size [512, 2N]
-    z_normT = z_norm.transpose(0, 1)
+    zT = [z1_T,        --->     zT = [z1_T,
+          z3_T,        perm           z2_T,
+           ...                         ...
+          z2N-1_T,                    zN_T,
+          z2_T,                       zN+1_T,
+          z4_T,                       zN+2_T,
+           ...                         ...
+          z2N_T]                      z2N_T]
+    
+    z_norm = [||z1_T||,  =  [||z1||,
+              ||z2_T||,      ||z2||,
+                ...             ...
+              ||z2N_T||]     ||z2N||]  (Note that ||z_T|| = ||z||)
 
-    # zTz = [[z_1^T * z_1, z_1^T * z_2, ..., z_1^T * z_2N],
-    #        [z_2^T * z_1, z_2^T * z_2, ..., z_2^T * z_2N],
-    #                               ...
-    #        [z_2N^T * z_1, z_2N^T * z_2, ..., z_2N^T * z_2N]]
-    #
-    # zTz_norm = [[||z_1|| * ||z_1||, ||z_1|| * ||z_2||, ..., ||z_1|| * ||z_2N||],
-    #             [||z_2|| * ||z_1||, ||z_2|| * ||z_2||, ..., ||z_2|| * ||z_2N||],
-    #                                           ...
-    #             [||z_2N|| * ||z_1||, ||z_2N|| * ||z_2||, ..., ||z_2N|| * ||z_2N||]
+    z = [z1, z2, ..., z2N]
 
-    zTz = torch.mm(z, zT)  # [2N, 2N]
-    zTz_norm = torch.mm(z_norm, z_normT)  # [2N, 2N]
+    z_normT = [||z1||, ||z2||, ... ||z2N||]
 
-    s = zTz / zTz_norm  # cosine similarities : s[i,j] = s_(i,j)
+    zTz = zT * z
+        = [[z1_T * z1, z1_T * z2, ..., z1_T * z2N],
+           [z2_T * z1, z2_T * z2, ..., z2_T * z2N],
+                          ...
+           [z2N_T * z1, z2N_T * z2, ..., z2N_T * z2N]]
+
+    zzT_norm = z_norm * z_normT
+             = [[||z1|| * ||z1||, ||z1|| * ||z2||, ..., ||z1|| * ||z2N||],
+                [||z2|| * ||z1||, ||z2|| * ||z2||, ..., ||z2|| * ||z2N||],
+                                              ...
+                [||z2N|| * ||z1||, ||z2N|| * ||z2||, ..., ||z2N|| * ||z2N||]
+
+    s = zTz / zzT_norm
+      = [[s11, s12, ..., s12N],
+         [s21, s22, ..., s22N],
+                  ...
+         [s2N1, s2N2, ..., s2N2N]]      where sij = cosine_similarity(zi, zj)
+
+    ####################################################################################
+    '''
+
+    zT_odd, zT_even = g(f(xT_odd.to(device))), g(f(xT_even.to(device))) # [N, 512], [N,512]
+    zT = torch.cat([zT_odd, zT_even], dim=0) # [2N, 512]
+
+    perm = make_permutation(N) # [0, N, 1, N+1, ..., N-1, 2N-1]
+    zT = zT[perm, :]
+    z_norm = torch.norm(zT, dim=-1).unsqueeze(-1) # [2N, 1]
+
+    z = zT.transpose(0, 1) # [512, 2N]
+    z_normT = z_norm.transpose(0, 1) # [1, 2N]
+    
+    zTz = torch.mm(zT, z)  # [2N, 2N]
+    zzT_norm = torch.mm(z_norm, z_normT)  # [2N, 2N]
+
+    s = zTz / zzT_norm # [2N, 2N]
 
     loss = 0.
     for k in range(N):
-        loss += criterion(2*k, 2*k + 1, s) + criterion(2*k + 1, 2*k, s)
+        loss += criterion(2 * k, 2 * k + 1, s) + criterion(2 * k + 1, 2 * k, s)
 
-    return loss/(2*N)
+    return loss/(2 * N)
+
+
+
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description="SimCLR implementation")
@@ -159,7 +208,7 @@ if __name__ == '__main__':
     parser.add_argument(
         '--batch_size',
         type=int,
-        default=32)
+        default=128)
 
     parser.add_argument(
         '--temperature',
@@ -172,7 +221,7 @@ if __name__ == '__main__':
     parser.add_argument(
         '--num_worker',
         type=int,
-        default=4)
+        default=1)
 
     parser.add_argument(
         '--valid_size',
