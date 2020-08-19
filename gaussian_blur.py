@@ -3,7 +3,6 @@ import numpy as np
 
 np.random.seed(0)
 
-
 class GaussianBlur(object):
     # Implements Gaussian blur as described in the SimCLR paper
     def __init__(self, kernel_size, min=0.1, max=2.0):
