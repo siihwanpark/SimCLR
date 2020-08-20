@@ -60,7 +60,7 @@ def main(args):
             criterion = nn.CrossEntropyLoss()
             
             if args.fine_tuning:
-                params = list(f.parameters) + list(classifier.parameters())
+                params = list(f.parameters()) + list(classifier.parameters())
             else:
                 params = classifier.parameters()
             
