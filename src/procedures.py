@@ -110,8 +110,9 @@ def train(epochs, patience, optimizer, scheduler, train_loader, valid_loader, en
                 print("[%d/%d][%d/%d] loss : %.4f | time : %.2fs"
                       % (epoch + 1, epochs, i + 1, len(train_loader), loss.item(), time.time() - t))
                 t = time.time()
-
-        save_checkpoint(encoder, projection, 'checkpoints/epoch%d.pt' % (epoch + 1))
+        
+        if (epoch + 1) % 10 == 0 :
+            save_checkpoint(encoder, projection, 'checkpoints/epoch%d.pt' % (epoch + 1))
 
         ################# TODO: Validation #################
         val_loss = 0.
