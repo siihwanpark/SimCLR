@@ -220,3 +220,15 @@ class NT_XentLoss(nn.Module):
         denominator = torch.sum(s[i, :], dim = -1) - s[i, i]
 
         return -torch.log(numerator/denominator)
+
+class Classifier(nn.Module):
+    def __init__(self, in_dim, num_classes, hidden_dim):
+        super(Classifier, self).__init__()
+        self.layers = nn.Sequential(
+            nn.Linear(in_dim, hidden_dim),
+            nn.ReLU(),
+            nn.Linear(hidden_dim, num_classes)
+        )
+
+    def forward(self, x):
+        return self.layers(x)

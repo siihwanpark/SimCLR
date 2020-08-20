@@ -1,5 +1,6 @@
 import torch
 import os
+import matplotlib.pyplot as plt
 
 def make_permutation(N):
     return [i//2 if (i % 2 == 0) else N+i//2 for i in range(2*N)]
@@ -22,7 +23,43 @@ def load_checkpoint(encoder, projection_head, path):
     else:
         raise NameError("There's no such directory or file : " + path)
 
-#x = torch.tensor([[1,1], [3,3], [5,5], [7,7], [9,9], [2,2], [4,4], [6,6], [8,8], [10,10]])
-#perm = make_permutation(5)
-#x = x[perm,:]
-#print(x)
+def save_checkpoint_classifier(classifier, path):
+    model_state = {
+        'state_dict': classifier.state_dict()
+    }
+
+    torch.save(model_state, path)
+    print('A check point for classifier has been generated : ' + path)
+
+def load_checkpoint_classifier(classifier, path):
+    if os.path.exists(path):
+        checkpoint = torch.load(path)
+        classifier.load_state_dict(checkpoint['state_dict'])
+        print('trained classifier ' + path + ' has been loaded successfully.')
+    else:
+        raise NameError("There's no such directory or file : " + path)
+
+def plot_loss_curve(train_losses, val_losses, path1, path2):
+    fig, ax = plt.subplots()
+    ax.plot(train_losses, label='train loss')
+    ax.set_xlabel('Iterations')
+    ax.set_ylabel('Loss')
+    ax.legend()
+
+    ax.set(title="Train Loss Curve")
+    ax.grid()
+
+    fig.savefig(path1)
+    plt.close()
+
+    fig, ax = plt.subplots()
+    ax.plot(val_losses, label='validation loss')
+    ax.set_xlabel('Iterations')
+    ax.set_ylabel('Loss')
+    ax.legend()
+
+    ax.set(title="Validation Loss Curve")
+    ax.grid()
+
+    fig.savefig(path2)
+    plt.close()
