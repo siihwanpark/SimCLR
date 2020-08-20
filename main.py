@@ -8,10 +8,10 @@ import torchvision.transforms as transforms
 
 from torch.utils.data import DataLoader
 from torchvision import datasets
-from dataloader.data_loader import DataSetWrapper
-from model import resnet18, ProjectionHead, NT_XentLoss, Classifier
-from utils import make_permutation, save_checkpoint, load_checkpoint, save_checkpoint_classifier, load_checkpoint_classifier, plot_loss_curve
-from procedures import train, train_classifier, test
+from src.dataloader.data_loader import DataSetWrapper
+from src.model import resnet18, ProjectionHead, NT_XentLoss, Classifier
+from src.utils import make_permutation, save_checkpoint, load_checkpoint, save_checkpoint_classifier, load_checkpoint_classifier, plot_loss_curve
+from src.procedures import train, train_classifier, test
 
 def main(args):
 
@@ -40,7 +40,7 @@ def main(args):
 
         train_losses, val_losses = train(main_epochs, patience, optimizer, scheduler, train_loader, valid_loader, f, g, criterion)
 
-        plot_loss_curve(train_losses, val_losses, 'train_loss.png', 'val_loss.png')
+        plot_loss_curve(train_losses, val_losses, 'results/train_loss.png', 'results/val_loss.png')
 
     else:
         ### Test ###

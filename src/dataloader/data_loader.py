@@ -2,9 +2,8 @@ import numpy as np
 from torch.utils.data import DataLoader
 from torch.utils.data.sampler import SubsetRandomSampler
 import torchvision.transforms as transforms
-from gaussian_blur import GaussianBlur
+from .gaussian_blur import GaussianBlur
 from torchvision import datasets
-
 
 # A function for color distortion
 # Referenced from the paper
@@ -37,12 +36,7 @@ class DataSetWrapper(object):
         return train_loader, valid_loader
 
     def _simclr_transform(self):
-        ### TODO: Complete SimCLR transforms ###
-        # I strongly recommand you to use torchvision.transforms to implement data augmentation
-        # You can use provided gaussian_blur if you want
-        
         color_distort = get_color_distortion()
-
         gaussian_blur = GaussianBlur(
             kernel_size=int(0.1 * self.input_shape[0]))
 

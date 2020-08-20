@@ -2,28 +2,60 @@ import torch
 import torch.nn as nn
 from torchvision.models.utils import load_state_dict_from_url
 
-# ResNet code referenced from https://github.com/pytorch/vision/blob/master/torchvision/models/resnet.py
+class ProjectionHead(nn.Module):
+    def __init__(self, dim, hidden_dim):
+        super(ProjectionHead, self).__init__()
+        self.layers = nn.Sequential(
+            nn.Linear(dim, hidden_dim),
+            nn.ReLU(),
+            nn.Linear(hidden_dim, dim),
+        )
 
-########################################################################################################
+    def forward(self, x):
+        return self.layers(x)
+
+class NT_XentLoss(nn.Module):
+    def __init__(self, T):
+        super(NT_XentLoss, self).__init__()
+        self.temperature = T
+
+    def forward(self, i, j, s):
+        # s : 2N x 2N tensor, cosine similarity matrix
+        s = torch.exp(s/self.temperature)
+        numerator = s[i, j]
+        denominator = torch.sum(s[i, :], dim=-1) - s[i, i]
+
+        return -torch.log(numerator/denominator)
+
+class Classifier(nn.Module):
+    def __init__(self, in_dim, num_classes, hidden_dim):
+        super(Classifier, self).__init__()
+        self.layers = nn.Sequential(
+            nn.Linear(in_dim, hidden_dim),
+            nn.ReLU(),
+            nn.Linear(hidden_dim, num_classes)
+        )
+
+    def forward(self, x):
+        return self.layers(x)
+
+### ResNet code referenced from https://github.com/pytorch/vision/blob/master/torchvision/models/resnet.py
+##########################################################################################################
 __all__ = ['ResNet', 'resnet18', 'resnet34']
-
 
 model_urls = {
     'resnet18': 'https://download.pytorch.org/models/resnet18-5c106cde.pth',
     'resnet34': 'https://download.pytorch.org/models/resnet34-333f7ec4.pth'
 }
 
-
 def conv3x3(in_planes, out_planes, stride=1, groups=1, dilation=1):
     """3x3 convolution with padding"""
     return nn.Conv2d(in_planes, out_planes, kernel_size=3, stride=stride,
                      padding=dilation, groups=groups, bias=False, dilation=dilation)
 
-
 def conv1x1(in_planes, out_planes, stride=1):
     """1x1 convolution"""
     return nn.Conv2d(in_planes, out_planes, kernel_size=1, stride=stride, bias=False)
-
 
 class BasicBlock(nn.Module):
     expansion = 1
@@ -195,40 +227,3 @@ def resnet34(pretrained=False, progress=True, **kwargs):
                    **kwargs)
 
 ########################################################################################################
-
-class ProjectionHead(nn.Module):
-    def __init__(self, dim, hidden_dim):
-        super(ProjectionHead, self).__init__()
-        self.layers = nn.Sequential(
-            nn.Linear(dim, hidden_dim),
-            nn.ReLU(),
-            nn.Linear(hidden_dim, dim),
-        )
-
-    def forward(self, x):
-        return self.layers(x)
-
-class NT_XentLoss(nn.Module):
-    def __init__(self, T):
-        super(NT_XentLoss, self).__init__()
-        self.temperature = T
-
-    def forward(self, i, j, s):
-        # s : 2N x 2N tensor, cosine similarity matrix 
-        s = torch.exp(s/self.temperature)
-        numerator = s[i, j]
-        denominator = torch.sum(s[i, :], dim = -1) - s[i, i]
-
-        return -torch.log(numerator/denominator)
-
-class Classifier(nn.Module):
-    def __init__(self, in_dim, num_classes, hidden_dim):
-        super(Classifier, self).__init__()
-        self.layers = nn.Sequential(
-            nn.Linear(in_dim, hidden_dim),
-            nn.ReLU(),
-            nn.Linear(hidden_dim, num_classes)
-        )
-
-    def forward(self, x):
-        return self.layers(x)
