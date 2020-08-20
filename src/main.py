@@ -8,7 +8,7 @@ import torchvision.transforms as transforms
 
 from torch.utils.data import DataLoader
 from torchvision import datasets
-from data_loader import DataSetWrapper
+from dataloader.data_loader import DataSetWrapper
 from model import resnet18, ProjectionHead, NT_XentLoss, Classifier
 from utils import make_permutation, save_checkpoint, load_checkpoint, save_checkpoint_classifier, load_checkpoint_classifier, plot_loss_curve
 from procedures import train, train_classifier, test
