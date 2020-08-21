@@ -14,8 +14,14 @@ PyTorch Implementation of the paper 'A Simple Framework for Contrastive Learning
 * **Encoder** : ResNet18 based, trained on STL-10 Dataset training/unlabeled data
 * **Projection Head** : 1 hidden layer (2048 units) MLP with ReLU activation
 * **Classifier** : 1 hidden layer (1024 units) MLP with ReLU activation
-* Training 100 epochs with early stopping on validation loss (patience = 5)
-* Batch size 512, Temperature for NT-Xent Loss 0.5
+* **SimCLR**
+  * Training 100 epochs with early stopping on validation loss (patience = 5)
+  * Batch size 512, Temperature for NT-Xent Loss 0.5
+* **Linear Evaluation Protocol**
+  * Training 100 epochs, Batch size 128
+* **Fine tuning**
+  * Training 10 ~ 20 epochs, Batch size 128
+  * Update all Encoder parameters with same learning rate
 
 ### Results
 |                    Accuracy                    |                   STL-10                  | CIFAR-10 | CIFAR-100 |
