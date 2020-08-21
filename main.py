@@ -9,7 +9,7 @@ import torchvision.transforms as transforms
 from torch.utils.data import DataLoader
 from torchvision import datasets
 from src.dataloader.data_loader import DataSetWrapper
-from src.model import resnet18, ProjectionHead, NT_XentLoss, Classifier
+from src.model import resnet18_encoder, ProjectionHead, NT_XentLoss, Classifier
 from src.utils import make_permutation, save_checkpoint, load_checkpoint, save_checkpoint_classifier, load_checkpoint_classifier, plot_loss_curve
 from src.procedures import train, train_classifier, test
 
@@ -27,7 +27,7 @@ def main(args):
     in_dim = 512 # Constant as long as we use ResNet18
 
     # model definition
-    f, g = resnet18().to(device), ProjectionHead(in_dim, projection_hidden_dim).to(device)
+    f, g = resnet18_encoder().to(device), ProjectionHead(in_dim, projection_hidden_dim).to(device)
 
     if not args.test:
         ### Train SimCLR ###
@@ -95,7 +95,7 @@ if __name__ == '__main__':
     parser.add_argument('--valid_size', type=float, default=0.05)
     parser.add_argument('--test', action = 'store_true', default = False)
     parser.add_argument('--checkpoint', type=str, default='checkpoints/best.pt')
-    parser.add_argument('--fine_tuning', action='store_true', default=False)    
+    parser.add_argument('--fine_tuning', action='store_true', default=False)
 
     args = parser.parse_args()
     main(args)
