@@ -1,14 +1,12 @@
 # SimCLR
 PyTorch Implementation of the paper 'A Simple Framework for Contrastive Learning of Visual Representations' (ICML 2020)
 
-* **Requirements**
-  * numpy
-  * torch
-  * torchvision
-  * opencv-python
+### Requirements
+* numpy
+* torch
+* torchvision
+* opencv-python
   
-* **command**
-  - python3 main.py --epochs [epochs] --batch_size [B] --temperature [T] --out_dim [out_dim] --num_worker [N] --valid_size [val_size]
 
 ### Details
 * **Encoder** : ResNet18 based, trained on STL-10 Dataset training/unlabeled data
